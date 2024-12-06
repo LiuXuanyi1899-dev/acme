@@ -281,12 +281,12 @@ class Snapshotter:
   """
 
   def __init__(
-      self,
-      objects_to_save: Mapping[str, snt.Module],
-      *,
-      directory: str = '~/acme/',
-      time_delta_minutes: float = 30.0,
-      snapshot_ttl_seconds: int | None = _DEFAULT_SNAPSHOT_TTL,
+          self,
+          objects_to_save: Mapping[str, snt.Module],
+          *,
+          directory: str = '~/acme/',
+          time_delta_minutes: float = 30.0,
+          snapshot_ttl_seconds: Union[int, None] = _DEFAULT_SNAPSHOT_TTL,
   ):
     """Builds the saver object.
 
