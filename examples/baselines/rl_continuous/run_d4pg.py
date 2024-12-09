@@ -13,6 +13,9 @@
 # limitations under the License.
 
 """Example running D4PG on continuous control tasks."""
+import os
+print("LD_LIBRARY_PATH:", os.environ.get("LD_LIBRARY_PATH"))
+print("PATH:", os.environ.get("PATH"))
 
 from absl import flags
 from acme.agents.jax import d4pg
