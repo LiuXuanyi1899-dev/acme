@@ -17,6 +17,8 @@ print("LD_LIBRARY_PATH from Bash:", bash_ld_library_path)
 if python_ld_library_path != bash_ld_library_path:
     raise ValueError("LD_LIBRARY_PATH mismatch between Python and Bash!")
 
+import matplotlib.animation as animation
+print(animation.writers.list())
 
 #检查tensorflow是否能找到gpu设备
 import tensorflow as tf

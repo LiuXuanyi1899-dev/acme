@@ -201,6 +201,7 @@ class EnvironmentLoop(core.Worker):
         step_count += int(result['episode_length'])
         # Log the given episode results.
         self._logger.write(result)
+        print(f"env_loop: {result}")
 
     return step_count
 
