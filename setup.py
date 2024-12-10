@@ -85,22 +85,34 @@ envs_requirements = [
 
 
 def generate_requirements_file(path=None):
-  """Generates requirements.txt file with the Acme's dependencies.
+    """Generates or appends to requirements.txt file with the Acme's dependencies.
 
-  It is used by Launchpad GCP runtime to generate Acme requirements to be
-  installed inside the docker image. Acme itself is not installed from pypi,
-  but instead sources are copied over to reflect any local changes made to
-  the codebase.
+    It is used by Launchpad GCP runtime to generate Acme requirements to be
+    installed inside the docker image. Acme itself is not installed from pypi,
+    but instead sources are copied over to reflect any local changes made to
+    the codebase.
 
-  Args:
-    path: path to the requirements.txt file to generate.
-  """
-  if not path:
-    path = os.path.join(os.path.dirname(__file__), 'acme/requirements.txt')
-  with open(path, 'w') as f:
-    for package in set(core_requirements + jax_requirements + tf_requirements +
-                       envs_requirements):
-      f.write(f'{package}\n')
+    Args:
+        path: path to the requirements.txt file to generate or append to.
+    """
+    if not path:
+        path = os.path.join(os.path.dirname(__file__), 'acme/requirements.txt')
+
+    # Read existing requirements if the file already exists
+    existing_requirements = set()
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            existing_requirements = set(line.strip() for line in f if line.strip())
+
+    # Add new requirements, avoiding duplicates
+    new_requirements = set(core_requirements + jax_requirements +
+                           tf_requirements + envs_requirements)
+    all_requirements = existing_requirements | new_requirements
+
+    # Write back the combined requirements
+    with open(path, 'w') as f:
+        for package in sorted(all_requirements):
+            f.write(f'{package}\n')
 
 
 long_description = """Acme is a library of reinforcement learning (RL) agents
@@ -134,6 +146,11 @@ class Develop(setuptools.command.develop.develop):
     generate_requirements_file()
     setuptools.command.develop.develop.run(self)
 
+def read_requirements_file(filepath):
+    with open(filepath, 'r') as f:
+        return [line.strip() for line in f if line.strip() and not line.startswith('#')]
+requirements_path = 'acme/requirements.txt'
+install_requires = list(set(core_requirements + read_requirements_file(requirements_path)))
 cmdclass = {
     'build_py': BuildPy,
     'develop': Develop,
@@ -152,7 +169,7 @@ setup(
     packages=find_packages(),
     package_data={'': ['requirements.txt']},
     include_package_data=True,
-    install_requires=core_requirements,
+    install_requires=install_requires,
     extras_require={
         'jax': jax_requirements,
         'tf': tf_requirements,
