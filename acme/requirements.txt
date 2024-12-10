@@ -23,7 +23,7 @@ decorator==5.1.1
 defusedxml==0.7.1
 dill==0.3.9
 distrax==0.1.5
-dm-acme==0.4.0
+#dm-acme==0.4.0
 dm-control==0.0.364896371
 dm-env==1.6
 dm-haiku==0.0.13
@@ -50,8 +50,8 @@ google-auth==2.36.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 grpcio==1.68.1
-gym==0.19.0
-gym-notices==0.0.8
+#gym==0.19.0
+#gym-notices==0.0.8
 h5py==3.12.1
 humanize==4.11.0
 idna==3.10
@@ -60,8 +60,8 @@ imageio-ffmpeg==0.5.1
 importlib_metadata==8.5.0
 importlib_resources==6.4.5
 ipython==8.12.3
-jax==0.4.25
-jaxlib @ https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.4.25+cuda11.cudnn86-cp39-cp39-manylinux2014_x86_64.whl
+#jax==0.4.25
+#jaxlib @ https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.4.25+cuda11.cudnn86-cp39-cp39-manylinux2014_x86_64.whl
 jedi==0.19.2
 Jinja2==3.1.4
 jmp==0.0.4
@@ -125,6 +125,7 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pycparser==2.22
 Pygments==2.18.0
+pygame==2.1.0
 pyinstaller==6.11.1
 pyinstaller-hooks-contrib==2024.10
 PyOpenGL==3.1.7
