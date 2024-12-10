@@ -216,22 +216,6 @@ env_loop.run(num_episodes=50)
 print("Finish training, plotting results")
 
 
-# 检查数据是否有效
-if not env_loop_logger.data:
-    print("Logger data is empty. Ensure EnvironmentLoop is running and logging data.")
-else:
-    df = pd.DataFrame(env_loop_logger.data)
-    print(df.head())  # 打印前几行，确保 'episode_return' 存在
-    plt.figure(figsize=(10, 4))
-    plt.title('Training episodes returns')
-    plt.xlabel('Training episodes')
-    plt.ylabel('Episode return')
-    plt.plot(df['episode_return'])
-    plt.show()
-
-
-
-# %matplotlib inline
 df = pd.DataFrame(env_loop_logger.data)
 plt.figure(figsize=(10, 4))
 plt.title('Training episodes returns')
@@ -249,4 +233,9 @@ while not timestep.last():
   timestep = eval_environment.step(action)
 
 # Embed the HTML video.
-HTML(eval_environment.make_html_animation())
+# HTML(eval_environment.make_html_animation())
+html_content = eval_environment.make_html_animation()
+with open("cartpole_video.html", "w") as f:
+    f.write(html_content)
+
+print("Video saved as cartpole_video.html")
