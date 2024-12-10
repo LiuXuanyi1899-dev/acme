@@ -1,22 +1,32 @@
 #!/bin/bash
-
-# 设置脚本在发生错误时立即退出
-set -e
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate duper
+PYTHON_PATH=$(which python3)
+echo "Current Python Path: $PYTHON_PATH"
+if [[ -z "$CONDA_PREFIX" ]]; then
+    echo "Not in a Conda environment."
+else
+    echo "In Conda environment (should match the python path): $CONDA_PREFIX"
+fi
+SITE_PACKAGES_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])")
+echo "Site-Package Path: $SITE_PACKAGES_DIR"
 
 echo "======================================================================="
-echo "Please make sure this script is located inside the project root folder and a Python virtual environment."
+echo -e "Please make sure:\n1. This script is located inside the project root folder (duper-agent/) and a Python virtual environment.\n2. Site-Package is the correct path with respect to the Python venv."
 echo "======================================================================="
 read -p "Proceed? (y/n): " IN_VENV
 if [[ "$IN_VENV" != "y" && "$IN_VENV" != "Y" ]]; then
     exit 1
 fi
-
+set -e
 echo "Installing required system tools and libraries..."
 sudo apt-get update
 sudo apt-get install -y libglew-dev libgl1-mesa-dev libosmesa6-dev mesa-utils cmake build-essential zlib1g-dev ffmpeg
 
 echo "Upgrading pip, setuptools, and wheel..."
 python3 -m pip install --upgrade pip setuptools wheel
+
+python3 -m pip uninstall -y gym
 
 echo "Installing acme wheel"
 python3 -m pip install "https://github.com/LiuXuanyi1899-dev/acme/releases/download/publish/dm_acme-0.4.1-py3-none-any.whl"
@@ -41,15 +51,34 @@ python3 -m pip install pip==21.3.1 setuptools==59.6.0 wheel==0.37.0
 echo "Installing gym==0.19.0..."
 python3 -m pip install gym==0.19.0
 
-read -p "Install MuJoCo and mujoco-py automatically? the .bashrc will be modified, make sure to checkout after the installation (don't proceed if you have already installed) (y/n): " INSTALL_MUJOCO
+# 替换 np.bool -> np.bool_ 和其他类型
+echo "Performing replacements in dm_control..."
+
+DM_CONTROL_DIR="$SITE_PACKAGES_DIR/dm_control"
+
+if [ -d "$DM_CONTROL_DIR" ]; then
+    echo "Found dm_control in $DM_CONTROL_DIR. Starting replacements..."
+    find "$DM_CONTROL_DIR" -type f -name "*.py" -exec sed -i \
+        -e 's/\bnp.bool\b/np.bool_/g' \
+        -e 's/\bnp.float\b/np.float64/g' \
+        -e 's/\bnp.float6464\b/np.float64/g' \
+        -e 's/\bnp.float6432\b/np.float32/g' {} +
+
+    echo "Replacements completed in dm_control."
+else
+    echo "dm_control directory not found in $SITE_PACKAGES_DIR. Skipping replacements."
+fi
+
+
+read -p "Install MuJoCo (both 200&210) and mujoco-py automatically? The .bashrc will be modified. Make sure to check it after installation (don't proceed if you have already installed) (y/n): " INSTALL_MUJOCO
 if [[ "$INSTALL_MUJOCO" == "y" || "$INSTALL_MUJOCO" == "Y" ]]; then
     echo "Installing MuJoCo and mujoco-py..."
-    MUJOCO_DIR=~/.mujoco
-    mkdir -p $MUJOCO_DIR
+    MUJOCO_DIR="$HOME/.mujoco"
+    mkdir -p "$MUJOCO_DIR"
 
     # 下载并安装 MuJoCo 210
     if [ ! -f mujoco210-linux-x86_64.tar.gz ]; then
-        wget https://github.com/deepmind/mujoco/releases/download/2.1/mujoco210-linux-x86_64.tar.gz -O mujoco210-linux-x86_64.tar.gz
+        wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz -O mujoco210-linux-x86_64.tar.gz
     fi
     tar -xzvf mujoco210-linux-x86_64.tar.gz -C $MUJOCO_DIR
 
