@@ -112,7 +112,7 @@ def make_networks(
     spec: specs.EnvironmentSpec, hidden_layer_sizes: Sequence[int] = (256, 256)
 ) -> PPONetworks:
   if isinstance(spec.actions, specs.DiscreteArray):
-    return make_discrete_networks(spec, hidden_layer_sizes)
+    return make_discrete_networks(spec, hidden_layer_sizes,False)
   else:
     return make_continuous_networks(
         spec,
