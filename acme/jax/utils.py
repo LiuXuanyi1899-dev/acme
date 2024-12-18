@@ -562,25 +562,46 @@ class PrefetchIterator(core.PrefetchingIterator):
     self.iterable = iterable
     self.device = device
     self.count = 0
-
-    # Start producer threads.
+    self.stop_event = threading.Event()
+    self.wait_time = 0.5
+    self.threads = []
     for _ in range(num_threads):
-      threading.Thread(target=self.producer, daemon=True).start()
+      thread = threading.Thread(target=self.producer, daemon=True)
+      thread.start()
+      self.threads.append(thread)
 
   def producer(self):
-    """Enqueues items from `iterable` on a given thread."""
-    try:
-      # Build a new iterable for each thread. This is crucial if working with
-      # tensorflow datasets because tf.Graph objects are thread local.
-      for item in self.iterable:
+    """Producer thread logic to handle empty iterators."""
+    print("Producer thread started.")
+    iterator = iter(self.iterable)
+
+    while not self.stop_event.is_set():
+      try:
+        # 尝试获取数据
+        item = next(iterator)
+        print("Fetched item:", item)
         if self.device:
-          jax.device_put(item, self.device)
+          item = jax.device_put(item, self.device)
         self.buffer.put(item)
-    except Exception as e:  # pylint: disable=broad-except
-      logging.exception('Error in producer thread for %s', self.iterable)
-      self.producer_error.append(e)
-    finally:
-      self.buffer.put(self.end)
+      except StopIteration:
+        # 如果迭代器为空，等待新数据
+        print("Iterator empty, waiting for new data...")
+        # time.sleep(self.wait_time)
+        continue  # 继续尝试迭代
+      except Exception as e:
+        # 捕获其他异常并记录
+        logging.exception("Error in producer thread.")
+        self.producer_error.append(e)
+        break
+    # Signal the consumer threads to stop
+    self.buffer.put(self.end)
+    print("Producer thread exiting.")
+
+  def stop(self):
+    """Signals all threads to stop and waits for them to finish."""
+    self.stop_event.set()
+    for thread in self.threads:
+      thread.join()
 
   def __iter__(self):
     return self
