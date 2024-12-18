@@ -234,6 +234,7 @@ def make_discrete_networks(
     environment_spec: specs.EnvironmentSpec,
     hidden_layer_sizes: Sequence[int] = (512,),
     use_conv: bool = True,
+    get_action_mask= None,
 ) -> PPONetworks:
   """Creates networks used by the agent for discrete action environments.
 
@@ -248,17 +249,33 @@ def make_discrete_networks(
   num_actions = environment_spec.actions.num_values
 
   def forward_fn(inputs):
-    layers = []
-    if use_conv:
-      layers.extend([networks_lib.AtariTorso()])
-    layers.extend([hk.nets.MLP(hidden_layer_sizes, activate_final=True)])
-    trunk = hk.Sequential(layers)
-    h = utils.batch_concat(inputs)
-    h = trunk(h)
-    logits = hk.Linear(num_actions)(h)
-    values = hk.Linear(1)(h)
-    values = jnp.squeeze(values, axis=-1)
-    return (CategoricalParams(logits=logits), values)
+      layers = []
+      if use_conv:
+          layers.extend([networks_lib.AtariTorso()])
+      layers.extend([hk.nets.MLP(hidden_layer_sizes, activate_final=True)])
+      trunk = hk.Sequential(layers)
+
+      h = utils.batch_concat(inputs)
+      h = trunk(h)
+      raw_logits = hk.Linear(num_actions)(h)
+      values = hk.Linear(1)(h)
+      values = jnp.squeeze(values, axis=-1)
+
+      action_mask = None
+      if get_action_mask:
+          # 获取动作掩码，假设其输出为 (num_actions,) 的布尔或0/1数组
+          action_mask = get_action_mask(environment_spec.actions)
+          # 将action_mask转换为同logits相兼容的dtype与shape
+          action_mask = jnp.asarray(action_mask, dtype=raw_logits.dtype)
+          # 为不可用动作添加极大负数使其在softmax中概率接近0
+          # 例如：masked_logits = jnp.where(action_mask > 0, raw_logits, -1e9)
+          # 或者将mask通过对logits加上 (-∞) 来屏蔽
+          big_negative = jnp.full_like(raw_logits, -1e9)
+          masked_logits = jnp.where(action_mask > 0, raw_logits, big_negative)
+      else:
+          masked_logits = raw_logits
+
+      return (CategoricalParams(logits=masked_logits), values)
 
   forward_fn = hk.without_apply_rng(hk.transform(forward_fn))
   dummy_obs = utils.zeros_like(environment_spec.observations)
