@@ -143,6 +143,8 @@ def run_experiment(experiment: config.ExperimentConfig,
       experiment.max_num_actor_steps -
       parent_counter.get_counts().get(train_counter.get_steps_key(), 0))
 
+  print("experiment args: max_num_actor_steps",max_num_actor_steps)
+
   if num_eval_episodes == 0:
     # No evaluation. Just run the training loop.
     train_loop.run(num_steps=max_num_actor_steps)
@@ -172,12 +174,16 @@ def run_experiment(experiment: config.ExperimentConfig,
 
   steps = 0
   while steps < max_num_actor_steps:
-    eval_loop.run(num_episodes=num_eval_episodes)
+    print(f"experiment progress:{steps}/{max_num_actor_steps}, each progress contains one eval and train loop")
     num_steps = min(eval_every, max_num_actor_steps - steps)
-    steps += train_loop.run(num_steps=num_steps)
+    steps += train_loop.run(num_steps=num_steps,is_eval=False)
+    eval_loop.run(num_episodes=num_eval_episodes,is_eval=True)
+
+  print("running final eval loop ...")
   eval_loop.run(num_episodes=num_eval_episodes)
 
   environment.close()
+  print("experiment finished")
 
 
 class _LearningActor(core.Actor):

@@ -73,7 +73,7 @@ class EnvironmentLoop(core.Worker):
     self._should_update = should_update
     self._observers = observers
 
-  def run_episode(self) -> loggers.LoggingData:
+  def run_episode(self,is_eval:bool) -> loggers.LoggingData:
     """Run one episode.
 
     Each episode is a loop which interacts first with the environment to get an
@@ -137,7 +137,10 @@ class EnvironmentLoop(core.Worker):
       episode_return = tree.map_structure(operator.iadd,
                                           episode_return,
                                           timestep.reward)
-
+      if is_eval:
+        print(f"eval episode running ...... step: {episode_steps}, return: {episode_return}")
+      else:
+        print(f"train episode running ...... step: {episode_steps}, return: {episode_return}")
     # Record counts.
     counts = self._counter.increment(episodes=1, steps=episode_steps)
 
@@ -154,12 +157,14 @@ class EnvironmentLoop(core.Worker):
     result.update(counts)
     for observer in self._observers:
       result.update(observer.get_metrics())
+    print(f"run episode result: {result}")
     return result
 
   def run(
       self,
       num_episodes: Optional[int] = None,
       num_steps: Optional[int] = None,
+      is_eval: Optional[bool] = False
   ) -> int:
     """Perform the run loop.
 
@@ -185,24 +190,27 @@ class EnvironmentLoop(core.Worker):
 
     if not (num_episodes is None or num_steps is None):
       raise ValueError('Either "num_episodes" or "num_steps" should be None.')
-
+    is_run_episodes= num_episodes is not None
     def should_terminate(episode_count: int, step_count: int) -> bool:
       return ((num_episodes is not None and episode_count >= num_episodes) or
               (num_steps is not None and step_count >= num_steps))
-
     episode_count: int = 0
     step_count: int = 0
     with signals.runtime_terminator():
       while not should_terminate(episode_count, step_count):
         episode_start = time.time()
-        result = self.run_episode()
+        result = self.run_episode(is_eval)
         result = {**result, **{'episode_duration': time.time() - episode_start}}
         episode_count += 1
         step_count += int(result['episode_length'])
         # Log the given episode results.
         self._logger.write(result)
-        print(f"env_loop: {result}")
-
+        if is_eval:
+          loop_name="eval_loop"
+          print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
+        else:
+          loop_name="train_loop"
+          print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
     return step_count
 
 
