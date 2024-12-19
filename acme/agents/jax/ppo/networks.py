@@ -357,6 +357,8 @@ def make_continuous_networks(
         scale *= init_scale / jax.nn.softplus(0.)
         scale += min_scale
 
+        #TODO:这里应该也要改，目前都是用高斯所以先不动。
+
         return MVNDiagParams(loc=loc, scale_diag=scale)
 
       # Following networks_lib.NormalTanhDistribution
@@ -366,9 +368,19 @@ def make_continuous_networks(
       loc_layer = hk.Linear(num_dimensions, w_init=w_init, b_init=b_init)
       scale_layer = hk.Linear(num_dimensions, w_init=w_init, b_init=b_init)
 
-      loc = loc_layer(h)
+
+      #这里loc和scale维度是二维，之前的写法有问题，导致第二个维度不是动作空间的原本维度而是展成一维的维度
+      #当然因为hk的这个连接层返回的肯定是一维，所以需要再reshape还原
+      loc = loc_layer(h)  # (batch_size, num_dimensions)
       scale = scale_layer(h)
-      scale = jax.nn.softplus(scale) + min_scale
+
+      batch_size = loc.shape[0]
+      action_dim = environment_spec.actions.shape
+      target_shape = (batch_size, *action_dim)
+      #拿到原本action_spec的维度，然后reshape还原。
+      loc = jnp.reshape(loc, target_shape)  # (batch_size, *action_dim)
+      scale = jnp.reshape(scale, target_shape)
+
 
       return TanhNormalParams(loc=loc, scale=scale)
 
