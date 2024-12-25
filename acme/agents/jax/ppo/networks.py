@@ -95,9 +95,11 @@ def make_inference_fn(
       actions = ppo_networks.sample_eval(dist_params, key)
     else:
       actions = ppo_networks.sample(dist_params, key)
+    actions=jnp.astype(actions, jnp.int64)
     if evaluation:
       return actions, {}
     log_prob = ppo_networks.log_prob(dist_params, actions)
+    log_prob=jnp.astype(log_prob, jnp.float32)
     extras = {
         'log_prob': log_prob,
         # Add batch dimension.

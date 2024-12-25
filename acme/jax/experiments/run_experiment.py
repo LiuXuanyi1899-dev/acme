@@ -32,7 +32,7 @@ import reverb
 
 
 def run_experiment(experiment: config.ExperimentConfig,
-                   eval_every: int = 100,
+                   num_train_episode: int = 100,
                    num_eval_episodes: int = 1):
   """Runs a simple, single-threaded training loop using the default evaluators.
 
@@ -175,8 +175,8 @@ def run_experiment(experiment: config.ExperimentConfig,
   steps = 0
   while steps < max_num_actor_steps:
     print(f"experiment progress:{steps}/{max_num_actor_steps}, each progress contains one eval and train loop")
-    num_steps = min(eval_every, max_num_actor_steps - steps)
-    steps += train_loop.run(num_steps=num_steps,is_eval=False)
+    # num_steps = min(eval_every, max_num_actor_steps - steps)
+    steps += train_loop.run(num_episodes=num_train_episode,is_eval=False)
     eval_loop.run(num_episodes=num_eval_episodes,is_eval=True)
 
   print("running final eval loop ...")
