@@ -152,7 +152,8 @@ class ExperimentConfig(Generic[builders.Networks, builders.Policy,
                                         builders.Sample]
   network_factory: NetworkFactory[builders.Networks]
   environment_factory: types.EnvironmentFactory
-  max_num_actor_steps: int
+  max_num_actor_steps: int # this is depreciated
+  max_training_eval_loops:int
   seed: int
   # policy_network_factory is deprecated. Use builder.make_policy to
   # create the policy.

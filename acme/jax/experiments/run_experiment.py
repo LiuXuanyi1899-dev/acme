@@ -135,6 +135,7 @@ def run_experiment(experiment: config.ExperimentConfig,
   train_loop = acme.EnvironmentLoop(
       environment,
       actor,
+      should_update=True,
       counter=train_counter,
       logger=train_logger,
       observers=experiment.observers)
@@ -142,7 +143,7 @@ def run_experiment(experiment: config.ExperimentConfig,
   max_num_actor_steps = (
       experiment.max_num_actor_steps -
       parent_counter.get_counts().get(train_counter.get_steps_key(), 0))
-
+  max_training_eval_loops=experiment.max_training_eval_loops
   print("experiment args: max_num_actor_steps",max_num_actor_steps)
 
   if num_eval_episodes == 0:
@@ -168,13 +169,18 @@ def run_experiment(experiment: config.ExperimentConfig,
   eval_loop = acme.EnvironmentLoop(
       environment,
       eval_actor,
+      should_update=False,
       counter=eval_counter,
       logger=eval_logger,
       observers=experiment.observers)
 
   steps = 0
-  while steps < max_num_actor_steps:
-    print(f"experiment progress:{steps}/{max_num_actor_steps}, each progress contains one eval and train loop")
+  loops = 0
+  while loops < max_training_eval_loops:
+    print(f"\n******************************************************\n"
+          f"experiment progress:{loops}/{max_training_eval_loops}, total steps: {steps}"
+          f"\neach progress contains {num_train_episode} train loop and {num_eval_episodes} eval loop"
+          f"\n******************************************************\n")
     # num_steps = min(eval_every, max_num_actor_steps - steps)
     steps += train_loop.run(num_episodes=num_train_episode,is_eval=False)
     eval_loop.run(num_episodes=num_eval_episodes,is_eval=True)
