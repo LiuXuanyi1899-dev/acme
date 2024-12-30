@@ -51,7 +51,7 @@ def make_distributed_experiment(
     inference_server_config: Optional[
         inference_server_lib.InferenceServerConfig
     ] = None,
-    num_learner_nodes: int = 1,
+    num_learner_nodes: int = 1, # acme doesn't support multi-node learners and multithreading_colocate_learner_and_reverb=True
     num_actors_per_node: int = 1,
     num_inference_servers: int = 1,
     multiprocessing_colocate_actors: bool = False,

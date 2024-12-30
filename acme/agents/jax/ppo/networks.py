@@ -250,7 +250,7 @@ def make_discrete_networks(
 
   num_actions = environment_spec.actions.num_values
 
-  def forward_fn(inputs):
+  def forward_fn(inputs, action_mask=None):
       layers = []
       if use_conv:
           layers.extend([networks_lib.AtariTorso()])
@@ -263,15 +263,8 @@ def make_discrete_networks(
       values = hk.Linear(1)(h)
       values = jnp.squeeze(values, axis=-1)
 
-      action_mask = None
-      if get_action_mask:
-          # 获取动作掩码，假设其输出为 (num_actions,) 的布尔或0/1数组
-          action_mask = get_action_mask(environment_spec.actions)
-          # 将action_mask转换为同logits相兼容的dtype与shape
-          action_mask = jnp.asarray(action_mask, dtype=raw_logits.dtype)
-          # 为不可用动作添加极大负数使其在softmax中概率接近0
-          # 例如：masked_logits = jnp.where(action_mask > 0, raw_logits, -1e9)
-          # 或者将mask通过对logits加上 (-∞) 来屏蔽
+      if action_mask is not None:
+          # Mask the logits based on the action mask
           big_negative = jnp.full_like(raw_logits, -1e9)
           masked_logits = jnp.where(action_mask > 0, raw_logits, big_negative)
       else:
@@ -282,8 +275,11 @@ def make_discrete_networks(
   forward_fn = hk.without_apply_rng(hk.transform(forward_fn))
   dummy_obs = utils.zeros_like(environment_spec.observations)
   dummy_obs = utils.add_batch_dim(dummy_obs)  # Dummy 'sequence' dim.
+  action_mask = None
+  if get_action_mask:
+      action_mask = get_action_mask(environment_spec.actions)
   network = networks_lib.FeedForwardNetwork(
-      lambda rng: forward_fn.init(rng, dummy_obs), forward_fn.apply)
+      lambda rng: forward_fn.init(rng, dummy_obs, action_mask), forward_fn.apply)
   # Create PPONetworks to add functionality required by the agent.
   return make_categorical_ppo_networks(network)  # pylint:disable=undefined-variable
 
