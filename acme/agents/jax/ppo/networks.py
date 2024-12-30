@@ -259,27 +259,31 @@ def make_discrete_networks(
 
       h = utils.batch_concat(inputs)
       h = trunk(h)
-      raw_logits = hk.Linear(num_actions)(h)
+      logits = hk.Linear(num_actions)(h)
       values = hk.Linear(1)(h)
       values = jnp.squeeze(values, axis=-1)
 
       if action_mask is not None:
-          # Mask the logits based on the action mask
-          big_negative = jnp.full_like(raw_logits, -1e9)
-          masked_logits = jnp.where(action_mask > 0, raw_logits, big_negative)
+          action_mask = jnp.asarray(action_mask, dtype=logits.dtype)
+          big_negative = jnp.full_like(logits, -1e9)
+          logits = jnp.where(action_mask > 0, logits, big_negative)
+      return CategoricalParams(logits=logits), values
+  def apply_fn(rng, inputs):
+      # If get_action_mask exists, we can fetch the mask for each forward pass
+      if get_action_mask:
+          action_mask = get_action_mask(environment_spec.actions)
       else:
-          masked_logits = raw_logits
-
-      return (CategoricalParams(logits=masked_logits), values)
-
+          action_mask = None
+      return forward_fn.apply(rng, inputs, action_mask=action_mask)
   forward_fn = hk.without_apply_rng(hk.transform(forward_fn))
   dummy_obs = utils.zeros_like(environment_spec.observations)
   dummy_obs = utils.add_batch_dim(dummy_obs)  # Dummy 'sequence' dim.
   action_mask = None
   if get_action_mask:
       action_mask = get_action_mask(environment_spec.actions)
+
   network = networks_lib.FeedForwardNetwork(
-      lambda rng: forward_fn.init(rng, dummy_obs, action_mask), forward_fn.apply)
+      lambda rng: forward_fn.init(rng, dummy_obs, action_mask), apply_fn)
   # Create PPONetworks to add functionality required by the agent.
   return make_categorical_ppo_networks(network)  # pylint:disable=undefined-variable
 
