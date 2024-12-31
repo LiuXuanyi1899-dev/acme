@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """PPO Builder."""
-from typing import Iterator, List, Optional
+from typing import Iterator, List, Optional, Callable
 
 import jax
 import numpy as np
@@ -37,6 +37,9 @@ from acme.jax import variable_utils
 from acme.utils import counting
 from acme.utils import loggers
 
+PPOAdditional=Callable[
+    [],
+    networks_lib.ActionMask]
 
 class PPOBuilder(
     builders.ActorLearnerBuilder[ppo_networks.PPONetworks,
@@ -47,11 +50,11 @@ class PPOBuilder(
     def __init__(
             self,
             config: ppo_config.PPOConfig,
-
+            additional: PPOAdditional
     ):
         """Creates PPO builder."""
         self._config = config
-
+        self._additional = additional
         # An extra step is used for bootstrapping when computing advantages.
         self._sequence_length = config.unroll_length + 1
 
@@ -204,7 +207,6 @@ class PPOBuilder(
             environment_spec: specs.EnvironmentSpec,
             variable_source: Optional[core.VariableSource] = None,
             adder: Optional[adders.Adder] = None,
-            get_action_mask=None,
     ) -> core.Actor:
         assert variable_source is not None
         actor_core = actor_core_lib.batched_feed_forward_with_extras_to_actor_core(
@@ -234,7 +236,7 @@ class PPOBuilder(
                 update_period=self._config.variable_update_period)
             actor = actors.GenericActor(
                 actor_core, random_key, variable_client, adder, backend='cpu')
-            actor.get_action_mask = get_action_mask
+            actor.get_action_mask = self._additional
         return actor
 
     def make_policy(

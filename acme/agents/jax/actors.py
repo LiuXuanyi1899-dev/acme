@@ -14,7 +14,7 @@
 
 """Simple JAX actors."""
 
-from typing import Generic, Optional
+from typing import Generic, Optional, Callable
 
 from acme import adders
 from acme import core
@@ -72,7 +72,7 @@ class GenericActor(core.Actor, Generic[actor_core.State, actor_core.Extras]):
     self._get_extras = actor.get_extras
     self._per_episode_update = per_episode_update
 
-    self.get_action_mask = None
+    self.get_action_mask: Optional[Callable[[], network_lib.ActionMask]] = None
 
   @property
   def _params(self):
