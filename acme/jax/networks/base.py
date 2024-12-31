@@ -33,6 +33,7 @@ PRNGKey = jax_types.PRNGKey
 BatchSize = int
 Observation = types.NestedArray
 Action = types.NestedArray
+ActionMask = types.NestedArray
 Params = types.NestedArray
 NetworkOutput = types.NestedArray
 QValues = jnp.ndarray

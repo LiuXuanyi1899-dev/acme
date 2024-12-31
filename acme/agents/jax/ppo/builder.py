@@ -201,6 +201,7 @@ class PPOBuilder(
       environment_spec: specs.EnvironmentSpec,
       variable_source: Optional[core.VariableSource] = None,
       adder: Optional[adders.Adder] = None,
+      get_action_mask=None,
   ) -> core.Actor:
     assert variable_source is not None
     actor_core = actor_core_lib.batched_feed_forward_with_extras_to_actor_core(
@@ -230,6 +231,7 @@ class PPOBuilder(
           update_period=self._config.variable_update_period)
       actor = actors.GenericActor(
           actor_core, random_key, variable_client, adder, backend='cpu')
+      actor.get_action_mask = get_action_mask
     return actor
 
   def make_policy(

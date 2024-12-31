@@ -72,13 +72,18 @@ class GenericActor(core.Actor, Generic[actor_core.State, actor_core.Extras]):
     self._get_extras = actor.get_extras
     self._per_episode_update = per_episode_update
 
+    self.get_action_mask = None
+
   @property
   def _params(self):
     return self._variable_client.params if self._variable_client else []
 
   def select_action(self,
                     observation: network_lib.Observation) -> types.NestedArray:
-    action, self._state = self._policy(self._params, observation, self._state)
+    action_mask = None
+    if self.get_action_mask:
+        action_mask = self.get_action_mask()
+    action, self._state = self._policy(self._params, observation,action_mask, self._state)
     return utils.to_numpy(action)
 
   def observe_first(self, timestep: dm_env.TimeStep):

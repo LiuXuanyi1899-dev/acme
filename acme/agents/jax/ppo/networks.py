@@ -88,9 +88,17 @@ def make_inference_fn(
       params: networks_lib.Params,
       key: networks_lib.PRNGKey,
       observations: networks_lib.Observation,
+      action_mask: networks_lib.ActionMask = None,
   ):
     dist_params, _ = ppo_networks.network.apply(params.model_params,
                                                 observations)
+    if isinstance(dist_params,CategoricalParams):
+        logits=dist_params.logits
+        if action_mask is not None:
+            action_mask = jnp.asarray(action_mask, dtype=logits.dtype)
+            big_negative = jnp.full_like(logits, -1e9)
+            logits = jnp.where(action_mask > 0, logits, big_negative)
+            dist_params = CategoricalParams(logits=logits)
     if evaluation and ppo_networks.sample_eval:
       actions = ppo_networks.sample_eval(dist_params, key)
     else:
@@ -109,6 +117,44 @@ def make_inference_fn(
 
   return inference
 
+def make_discrete_networks(
+    environment_spec: specs.EnvironmentSpec,
+    hidden_layer_sizes: Sequence[int] = (512,),
+    use_conv: bool = True,
+) -> PPONetworks:
+  """Creates networks used by the agent for discrete action environments.
+
+  Args:
+    environment_spec: Environment spec used to define number of actions.
+    hidden_layer_sizes: Network definition.
+    use_conv: Whether to use a conv or MLP feature extractor.
+  Returns:
+    PPONetworks
+  """
+
+  num_actions = environment_spec.actions.num_values
+
+  def forward_fn(inputs):
+      layers = []
+      if use_conv:
+          layers.extend([networks_lib.AtariTorso()])
+      layers.extend([hk.nets.MLP(hidden_layer_sizes, activate_final=True)])
+      trunk = hk.Sequential(layers)
+
+      h = utils.batch_concat(inputs)
+      h = trunk(h)
+      logits = hk.Linear(num_actions)(h)
+      values = hk.Linear(1)(h)
+      values = jnp.squeeze(values, axis=-1)
+      log_params= CategoricalParams(logits=logits)
+      return log_params, values
+  forward_fn = hk.without_apply_rng(hk.transform(forward_fn))
+  dummy_obs = utils.zeros_like(environment_spec.observations)
+  dummy_obs = utils.add_batch_dim(dummy_obs)  # Dummy 'sequence' dim.
+  network = networks_lib.FeedForwardNetwork(
+      lambda rng: forward_fn.init(rng, dummy_obs), forward_fn.apply)
+  # Create PPONetworks to add functionality required by the agent.
+  return make_categorical_ppo_networks(network)  # pylint:disable=undefined-variable
 
 def make_networks(
     spec: specs.EnvironmentSpec, hidden_layer_sizes: Sequence[int] = (256, 256)
@@ -232,62 +278,6 @@ def make_tanh_normal_ppo_networks(
       sample_eval=sample_eval)
 
 
-def make_discrete_networks(
-    environment_spec: specs.EnvironmentSpec,
-    hidden_layer_sizes: Sequence[int] = (512,),
-    use_conv: bool = True,
-    get_action_mask= None,
-) -> PPONetworks:
-  """Creates networks used by the agent for discrete action environments.
-
-  Args:
-    environment_spec: Environment spec used to define number of actions.
-    hidden_layer_sizes: Network definition.
-    use_conv: Whether to use a conv or MLP feature extractor.
-  Returns:
-    PPONetworks
-  """
-
-  num_actions = environment_spec.actions.num_values
-
-  def forward_fn(inputs, action_mask=None):
-      layers = []
-      if use_conv:
-          layers.extend([networks_lib.AtariTorso()])
-      layers.extend([hk.nets.MLP(hidden_layer_sizes, activate_final=True)])
-      trunk = hk.Sequential(layers)
-
-      h = utils.batch_concat(inputs)
-      h = trunk(h)
-      logits = hk.Linear(num_actions)(h)
-      values = hk.Linear(1)(h)
-      values = jnp.squeeze(values, axis=-1)
-
-      if action_mask is not None:
-          action_mask = jnp.asarray(action_mask, dtype=logits.dtype)
-          big_negative = jnp.full_like(logits, -1e9)
-          logits = jnp.where(action_mask > 0, logits, big_negative)
-      return CategoricalParams(logits=logits), values
-  def apply_fn(rng, inputs):
-      # If get_action_mask exists, we can fetch the mask for each forward pass
-      if get_action_mask:
-          action_mask = get_action_mask(environment_spec.actions)
-      else:
-          action_mask = None
-      return forward_fn.apply(rng, inputs, action_mask=action_mask)
-  forward_fn = hk.without_apply_rng(hk.transform(forward_fn))
-  dummy_obs = utils.zeros_like(environment_spec.observations)
-  dummy_obs = utils.add_batch_dim(dummy_obs)  # Dummy 'sequence' dim.
-  action_mask = None
-  if get_action_mask:
-      action_mask = get_action_mask(environment_spec.actions)
-
-  network = networks_lib.FeedForwardNetwork(
-      lambda rng: forward_fn.init(rng, dummy_obs, action_mask), apply_fn)
-  # Create PPONetworks to add functionality required by the agent.
-  return make_categorical_ppo_networks(network)  # pylint:disable=undefined-variable
-
-
 def make_categorical_ppo_networks(
     network: networks_lib.FeedForwardNetwork) -> PPONetworks:
   """Constructs a PPONetworks for Categorical Policy from FeedForwardNetwork.
@@ -395,7 +385,7 @@ def make_continuous_networks(
 
     policy_output = _policy_network(inputs)
     value = value_network(inputs)
-    return (policy_output, value)
+    return policy_output, value
 
   # Transform into pure functions.
   forward_fn = hk.without_apply_rng(hk.transform(forward_fn))
