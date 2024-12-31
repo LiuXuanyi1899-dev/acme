@@ -25,7 +25,7 @@ import launchpad as lp
 FLAGS = flags.FLAGS
 
 flags.DEFINE_bool(
-    'run_distributed', True, 'Should an agent be executed in a distributed '
+    'run_distributed', False, 'Should an agent be executed in a distributed '
     'way. If False, will run single-threaded.')
 flags.DEFINE_string('env_name', 'gym:HalfCheetah-v2', 'What environment to run')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
@@ -45,7 +45,7 @@ def build_experiment_config():
       normalize_advantage=True,
       normalize_value=True,
       obs_normalization_fns_factory=ppo.build_mean_std_normalizer)
-  ppo_builder = ppo.PPOBuilder(config)
+  ppo_builder = ppo.PPOBuilder(config,None)
 
   layer_sizes = (256, 256, 256)
   return experiments.ExperimentConfig(
@@ -65,8 +65,8 @@ def main(_):
   else:
     experiments.run_experiment(
         experiment=config,
-        eval_every=FLAGS.eval_every,
-        num_eval_episodes=FLAGS.evaluation_episodes)
+        num_train_episode=10,
+        num_eval_episodes=1)
 
 
 if __name__ == '__main__':

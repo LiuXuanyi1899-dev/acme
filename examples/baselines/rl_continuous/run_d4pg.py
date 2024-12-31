@@ -80,7 +80,8 @@ def main(_):
   else:
     experiments.run_experiment(
         experiment=config,
-        eval_every=FLAGS.eval_every,
+        num_train_episode=100,
+        # eval_every=FLAGS.eval_every,
         num_eval_episodes=FLAGS.evaluation_episodes)
 
 

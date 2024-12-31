@@ -92,7 +92,7 @@ actor_core.Extras],
                       observation: network_lib.Observation) -> types.NestedArray:
         policy_params, obs_norm_params = tuple(self._params)
         observation = self._apply_normalization(observation, obs_norm_params)
-        action, self._state = self._policy(policy_params, observation, self._state)
+        action, self._state = self._policy(policy_params, observation, self._state,None)
         return utils.to_numpy(action)
 
 

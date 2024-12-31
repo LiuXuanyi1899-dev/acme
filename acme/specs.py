@@ -35,7 +35,6 @@ class EnvironmentSpec(NamedTuple):
   # TODO(b/144758674): Use NestedSpec type here.
   observations: Any
   actions: Any
-  actions_mask: Any
   rewards: Any
   discounts: Any
 
@@ -45,6 +44,5 @@ def make_environment_spec(environment: dm_env.Environment) -> EnvironmentSpec:
   return EnvironmentSpec(
       observations=environment.observation_spec(),
       actions=environment.action_spec(),
-      actions_mask=environment.action_mask_spec(),
       rewards=environment.reward_spec(),
       discounts=environment.discount_spec())

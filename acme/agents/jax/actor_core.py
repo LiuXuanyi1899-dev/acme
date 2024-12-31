@@ -15,7 +15,7 @@
 """ActorCore interface definition."""
 
 import dataclasses
-from typing import Callable, Generic, Mapping, Tuple, TypeVar, Union
+from typing import Callable, Generic, Mapping, Tuple, TypeVar, Union, Optional
 
 from acme import types
 from acme.jax import networks as networks_lib
@@ -34,8 +34,9 @@ State = TypeVar('State')
 Extras = TypeVar('Extras')
 RecurrentState = TypeVar('RecurrentState')
 SelectActionFn = Callable[
-    [networks_lib.Params, networks_lib.Observation,networks_lib.ActionMask, State],
-    Tuple[networks_lib.Action, State]]
+    [networks_lib.Params, networks_lib.Observation, State, Optional[networks_lib.ActionMask]],
+    Tuple[networks_lib.Action, State]
+]
 
 
 @dataclasses.dataclass
@@ -118,8 +119,9 @@ def batched_feed_forward_with_extras_to_actor_core(
   # this is jit
   def select_action(params: networks_lib.Params,
                     observation: networks_lib.Observation,
+                    state: SimpleActorCoreStateWithExtras,
                     action_mask: networks_lib.ActionMask,
-                    state: SimpleActorCoreStateWithExtras):
+                    ):
     rng = state.rng
     rng1, rng2 = jax.random.split(rng)
     observation = utils.add_batch_dim(observation)

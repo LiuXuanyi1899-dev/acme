@@ -14,7 +14,7 @@
 
 """Simple JAX actors."""
 
-from typing import Generic, Optional
+from typing import Generic, Optional, Callable
 
 from acme import adders
 from acme import core
@@ -72,7 +72,7 @@ class GenericActor(core.Actor, Generic[actor_core.State, actor_core.Extras]):
     self._get_extras = actor.get_extras
     self._per_episode_update = per_episode_update
 
-    self.get_action_mask = None
+    self.get_action_mask: Optional[Callable[[], network_lib.ActionMask]] = None
 
   @property
   def _params(self):
@@ -83,7 +83,7 @@ class GenericActor(core.Actor, Generic[actor_core.State, actor_core.Extras]):
     action_mask = None
     if self.get_action_mask:
         action_mask = self.get_action_mask()
-    action, self._state = self._policy(self._params, observation,action_mask, self._state)
+    action, self._state = self._policy(self._params, observation, self._state,action_mask)
     return utils.to_numpy(action)
 
   def observe_first(self, timestep: dm_env.TimeStep):
