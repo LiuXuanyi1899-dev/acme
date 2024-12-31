@@ -18,6 +18,7 @@ from acme.agents.jax.ppo.builder import PPOBuilder
 from acme.agents.jax.ppo.config import PPOConfig
 from acme.agents.jax.ppo.learning import PPOLearner
 from acme.agents.jax.ppo.networks import EntropyFn
+from acme.agents.jax.ppo.networks import PPONetworks
 from acme.agents.jax.ppo.networks import make_categorical_ppo_networks
 from acme.agents.jax.ppo.networks import make_continuous_networks
 from acme.agents.jax.ppo.networks import make_discrete_networks
@@ -26,8 +27,7 @@ from acme.agents.jax.ppo.networks import make_mvn_diag_ppo_networks
 from acme.agents.jax.ppo.networks import make_networks
 from acme.agents.jax.ppo.networks import make_ppo_networks
 from acme.agents.jax.ppo.networks import make_tanh_normal_ppo_networks
-from acme.agents.jax.ppo.networks import PPONetworks
-from acme.agents.jax.ppo.normalization import build_ema_mean_std_normalizer
-from acme.agents.jax.ppo.normalization import build_mean_std_normalizer
 from acme.agents.jax.ppo.normalization import NormalizationFns
 from acme.agents.jax.ppo.normalization import NormalizedGenericActor
+from acme.agents.jax.ppo.normalization import build_ema_mean_std_normalizer
+from acme.agents.jax.ppo.normalization import build_mean_std_normalizer
