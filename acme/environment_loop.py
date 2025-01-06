@@ -205,12 +205,13 @@ class EnvironmentLoop(core.Worker):
         step_count += int(result['episode_length'])
         # Log the given episode results.
         self._logger.write(result)
-        if is_eval:
-          loop_name="eval_loop"
-          print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
-        else:
-          loop_name="train_loop"
-          print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
+        print(f"env loop finished, result= {result}")
+        # if is_eval:
+        #   loop_name="eval_loop"
+        #   print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
+        # else:
+        #   loop_name="train_loop"
+        #   print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
     return step_count
 
 

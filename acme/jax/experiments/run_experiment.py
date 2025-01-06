@@ -32,7 +32,7 @@ import reverb
 
 
 def run_experiment(experiment: config.ExperimentConfig,
-                   num_train_episode: int = 100,
+                   eval_every: int = 100,
                    num_eval_episodes: int = 1):
     """Runs a simple, single-threaded training loop using the default evaluators.
 
@@ -175,19 +175,18 @@ def run_experiment(experiment: config.ExperimentConfig,
         observers=experiment.observers)
 
     steps = 0
-    loops = 0
-    while loops < max_training_eval_loops:
+    while steps < max_num_actor_steps:
+
+        num_steps = min(eval_every, max_num_actor_steps - steps)
+        steps += train_loop.run(num_steps=num_steps)
         print(f"\n******************************************************\n"
-              f"experiment progress:{loops}/{max_training_eval_loops}, total steps: {steps}"
-              f"\neach progress contains {num_train_episode} train loop and {num_eval_episodes} eval loop"
+              f"training progress(steps%) :{steps}/{max_num_actor_steps}"
               f"\n******************************************************\n")
-        # num_steps = min(eval_every, max_num_actor_steps - steps)
-        steps += train_loop.run(num_episodes=num_train_episode, is_eval=False)
-        eval_loop.run(num_episodes=num_eval_episodes, is_eval=True)
-
-    print("running final eval loop ...")
+        eval_loop.run(num_episodes=num_eval_episodes)
+        print(f"\n******************************************************\n"
+              f"running eval: {num_eval_episodes} episodes"
+              f"\n******************************************************\n")
     eval_loop.run(num_episodes=num_eval_episodes)
-
     environment.close()
     print("experiment finished")
 
