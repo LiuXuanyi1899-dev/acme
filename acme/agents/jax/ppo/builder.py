@@ -50,11 +50,10 @@ class PPOBuilder(
     def __init__(
             self,
             config: ppo_config.PPOConfig,
-            additional: Optional[PPOAdditional] = None
     ):
         """Creates PPO builder."""
         self._config = config
-        self._additional = additional
+        self._additional: Optional[PPOAdditional] = None
         # An extra step is used for bootstrapping when computing advantages.
         self._sequence_length = config.unroll_length + 1
 
@@ -236,7 +235,7 @@ class PPOBuilder(
                 update_period=self._config.variable_update_period)
             actor = actors.GenericActor(
                 actor_core, random_key, variable_client, adder, backend='cpu')
-            actor.get_action_mask = self._additional
+        actor.get_action_mask = self._additional
         return actor
 
     def make_policy(

@@ -50,6 +50,7 @@ def run_experiment(experiment: config.ExperimentConfig,
 
     # Create the environment and get its spec.
     environment = experiment.environment_factory(experiment.seed)
+    experiment.builder._additional=environment.action_mask_spec
     environment_spec = experiment.environment_spec or specs.make_environment_spec(
         environment)
 
@@ -143,7 +144,6 @@ def run_experiment(experiment: config.ExperimentConfig,
     max_num_actor_steps = (
             experiment.max_num_actor_steps -
             parent_counter.get_counts().get(train_counter.get_steps_key(), 0))
-    max_training_eval_loops = experiment.max_training_eval_loops
     print("experiment args: max_num_actor_steps", max_num_actor_steps)
 
     if num_eval_episodes == 0:
@@ -178,11 +178,11 @@ def run_experiment(experiment: config.ExperimentConfig,
     while steps < max_num_actor_steps:
 
         num_steps = min(eval_every, max_num_actor_steps - steps)
-        steps += train_loop.run(num_steps=num_steps)
+        steps += train_loop.run(is_eval=False, num_steps=num_steps,max_num_actor_steps=max_num_actor_steps,step_from_start=steps)
         print(f"\n******************************************************\n"
               f"training progress(steps%) :{steps}/{max_num_actor_steps}"
               f"\n******************************************************\n")
-        eval_loop.run(num_episodes=num_eval_episodes)
+        eval_loop.run(is_eval=True,num_episodes=num_eval_episodes)
         print(f"\n******************************************************\n"
               f"running eval: {num_eval_episodes} episodes"
               f"\n******************************************************\n")

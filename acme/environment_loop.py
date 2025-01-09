@@ -137,10 +137,10 @@ class EnvironmentLoop(core.Worker):
       episode_return = tree.map_structure(operator.iadd,
                                           episode_return,
                                           timestep.reward)
-      if is_eval:
-        print(f"eval episode running ...... step: {episode_steps}, return: {episode_return}")
-      else:
-        print(f"train episode running ...... step: {episode_steps}, return: {episode_return}")
+      # if is_eval:
+      #   print(f"eval episode running ...... step: {episode_steps}, return: {episode_return}")
+      # else:
+      #   print(f"train episode running ...... step: {episode_steps}, return: {episode_return}")
     # Record counts.
     counts = self._counter.increment(episodes=1, steps=episode_steps)
 
@@ -157,14 +157,16 @@ class EnvironmentLoop(core.Worker):
     result.update(counts)
     for observer in self._observers:
       result.update(observer.get_metrics())
-    print(f"run episode result: {result}")
+
     return result
 
   def run(
       self,
       num_episodes: Optional[int] = None,
       num_steps: Optional[int] = None,
-      is_eval: Optional[bool] = False
+      is_eval: Optional[bool] = False,
+      max_num_actor_steps: Optional[int] = None,
+      step_from_start: Optional[int] = None,
   ) -> int:
     """Perform the run loop.
 
@@ -205,13 +207,13 @@ class EnvironmentLoop(core.Worker):
         step_count += int(result['episode_length'])
         # Log the given episode results.
         self._logger.write(result)
-        print(f"env loop finished, result= {result}")
-        # if is_eval:
-        #   loop_name="eval_loop"
-        #   print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
-        # else:
-        #   loop_name="train_loop"
-        #   print(f"{loop_name} episode progress updated: {episode_count}/{num_episodes}, episode result:  {result}")
+        if is_eval:
+          episode_name="eval"
+        else:
+          episode_name="train"
+        print(f"{episode_name} episode result (current step: {step_count}, episode: {episode_count}): \n {result}")
+        if max_num_actor_steps is not None:
+          print(f"steps progress: {step_from_start+step_count}/{max_num_actor_steps}")
     return step_count
 
 
