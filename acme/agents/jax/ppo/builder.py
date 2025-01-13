@@ -38,10 +38,6 @@ from acme.jax import variable_utils
 from acme.utils import counting
 from acme.utils import loggers
 
-# PPOAdditional=Callable[
-#     [],
-#     networks_lib.ActionMask]
-
 class PPOBuilder(
     builders.ActorLearnerBuilder[ppo_networks.PPONetworks,
     actor_core_lib.FeedForwardPolicyWithExtra,
@@ -54,7 +50,6 @@ class PPOBuilder(
     ):
         """Creates PPO builder."""
         self._config = config
-        self._additional: Optional[dm_env.Environment] = None
         # An extra step is used for bootstrapping when computing advantages.
         self._sequence_length = config.unroll_length + 1
 
@@ -236,7 +231,6 @@ class PPOBuilder(
                 update_period=self._config.variable_update_period)
             actor = actors.GenericActor(
                 actor_core, random_key, variable_client, adder, backend='cpu')
-        actor.env = self._additional
         return actor
 
     def make_policy(

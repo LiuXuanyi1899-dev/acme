@@ -257,9 +257,9 @@ def make_distributed_experiment(
     # Create environment and policy core.
 
     # Environments normally require uint32 as a seed.
+    seed=utils.sample_uint32(environment_key)
     environment = experiment.environment_factory(
-        utils.sample_uint32(environment_key))
-    experiment.builder._additional = environment
+        seed)
     environment_spec = specs.make_environment_spec(environment)
 
     networks = experiment.network_factory(environment_spec)
@@ -281,6 +281,8 @@ def make_distributed_experiment(
     actor = experiment.builder.make_actor(actor_key, policy_network,
                                           environment_spec, variable_source,
                                           adder)
+    print(f"distributed: inject environment {seed} to actor {actor_id}")
+    actor.env=environment
 
     # Create logger and counter.
     counter = counting.Counter(counter, 'actor')

@@ -72,6 +72,7 @@ class EnvironmentLoop(core.Worker):
         label, steps_key=self._counter.get_steps_key())
     self._should_update = should_update
     self._observers = observers
+    self._actor.env=self._environment
 
   def run_episode(self,is_eval:bool) -> loggers.LoggingData:
     """Run one episode.

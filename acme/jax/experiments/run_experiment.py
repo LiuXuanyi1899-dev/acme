@@ -50,7 +50,6 @@ def run_experiment(experiment: config.ExperimentConfig,
 
     # Create the environment and get its spec.
     environment = experiment.environment_factory(experiment.seed)
-    experiment.builder._additional=environment.action_mask_spec
     environment_spec = experiment.environment_spec or specs.make_environment_spec(
         environment)
 
@@ -105,7 +104,7 @@ def run_experiment(experiment: config.ExperimentConfig,
     actor_key, key = jax.random.split(key)
     actor = experiment.builder.make_actor(
         actor_key, policy, environment_spec, variable_source=learner, adder=adder)
-
+    actor.env = environment
     # Create the environment loop used for training.
     train_counter = counting.Counter(
         parent_counter, prefix='actor', time_delta=0.)
