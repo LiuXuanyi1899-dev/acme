@@ -15,6 +15,7 @@
 """PPO Builder."""
 from typing import Iterator, List, Optional, Callable
 
+import dm_env
 import jax
 import numpy as np
 import optax
@@ -37,9 +38,9 @@ from acme.jax import variable_utils
 from acme.utils import counting
 from acme.utils import loggers
 
-PPOAdditional=Callable[
-    [],
-    networks_lib.ActionMask]
+# PPOAdditional=Callable[
+#     [],
+#     networks_lib.ActionMask]
 
 class PPOBuilder(
     builders.ActorLearnerBuilder[ppo_networks.PPONetworks,
@@ -53,7 +54,7 @@ class PPOBuilder(
     ):
         """Creates PPO builder."""
         self._config = config
-        self._additional: Optional[PPOAdditional] = None
+        self._additional: Optional[dm_env.Environment] = None
         # An extra step is used for bootstrapping when computing advantages.
         self._sequence_length = config.unroll_length + 1
 
@@ -235,7 +236,7 @@ class PPOBuilder(
                 update_period=self._config.variable_update_period)
             actor = actors.GenericActor(
                 actor_core, random_key, variable_client, adder, backend='cpu')
-        actor.get_action_mask = self._additional
+        actor.env = self._additional
         return actor
 
     def make_policy(

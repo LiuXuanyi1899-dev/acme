@@ -259,7 +259,7 @@ def make_distributed_experiment(
     # Environments normally require uint32 as a seed.
     environment = experiment.environment_factory(
         utils.sample_uint32(environment_key))
-    experiment.builder._additional = environment.action_mask_spec
+    experiment.builder._additional = environment
     environment_spec = specs.make_environment_spec(environment)
 
     networks = experiment.network_factory(environment_spec)

@@ -110,7 +110,9 @@ class EnvironmentLoop(core.Worker):
 
       # Generate an action from the agent's policy.
       select_action_start = time.time()
-      action = self._actor.select_action(timestep.observation)
+      #FIXME: changed to predict from newest obs instead of previous return obs. not sure if this works more logically.
+      latest_obs=self._environment.observation_spec()
+      action = self._actor.select_action(latest_obs)
       select_action_durations.append(time.time() - select_action_start)
 
       # Step the environment with the agent's selected action.

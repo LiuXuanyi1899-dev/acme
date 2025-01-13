@@ -72,7 +72,8 @@ class GenericActor(core.Actor, Generic[actor_core.State, actor_core.Extras]):
     self._get_extras = actor.get_extras
     self._per_episode_update = per_episode_update
 
-    self.get_action_mask: Optional[Callable[[], network_lib.ActionMask]] = None
+    # self.get_action_mask: Optional[Callable[[], network_lib.ActionMask]] = None
+    self.env: Optional[dm_env.Environment] = None
 
   @property
   def _params(self):
@@ -81,8 +82,9 @@ class GenericActor(core.Actor, Generic[actor_core.State, actor_core.Extras]):
   def select_action(self,
                     observation: network_lib.Observation) -> types.NestedArray:
     action_mask = None
-    if self.get_action_mask:
-        action_mask = self.get_action_mask()
+    if self.env:
+        action_mask = self.env.action_mask_spec()
+        print(f"actor {self._random_key} inference action mask from env {self.env.seed}")
     action, self._state = self._policy(self._params, observation, self._state,action_mask)
     return utils.to_numpy(action)
 
